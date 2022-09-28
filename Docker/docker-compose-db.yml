@@ -1,0 +1,24 @@
+version: '3.9'
+
+services:
+  pg:
+    container_name: pg
+    image: postgres
+    restart: unless-stopped
+    ports:
+      - '${PG_PORT}:${PG_PORT}'
+    environment:
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASS}
+      POSTGRES_DB: ${PG_DB}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d database-n3oo -U postgres" ]
+      interval: 10s
+      timeout: 60s
+      retries: 3
+      start_period: 5s
+    volumes:
+      - pg_devops_elite_volume:/var/lib/postgresql/data
+
+volumes:
+  pg_devops_elite_volume:

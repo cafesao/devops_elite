@@ -1,0 +1,60 @@
+version: '3.9'
+
+services:
+  api:
+    container_name: api
+    restart: unless-stopped
+    build:
+      context: ../
+      dockerfile: ./Docker/Dockerfile
+    ports:
+      - '${API_PORT}:${API_PORT}'
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl --fail http://localhost:8000/api || exit 1 "
+        ]
+      interval: 5s
+      timeout: 60s
+      retries: 3
+      start_period: 5s
+    depends_on:
+      pg:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  pg:
+    container_name: pg
+    image: postgres
+    restart: unless-stopped
+    ports:
+      - '${PG_PORT}:${PG_PORT}'
+    environment:
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASS}
+      POSTGRES_DB: ${PG_DB}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d database-n3oo -U postgres" ]
+      interval: 10s
+      timeout: 60s
+      retries: 3
+      start_period: 5s
+    volumes:
+      - pg_devops_elite_volume:/var/lib/postgresql/data
+
+  migrate:
+    image: node:18-alpine
+    container_name: migrate
+    command: npx prisma migrate deploy
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    volumes:
+      - ../prisma:/prisma
+    depends_on:
+      pg:
+        condition: service_healthy
+
+volumes:
+  pg_devops_elite_volume:
