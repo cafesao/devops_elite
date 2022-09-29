@@ -1,6 +1,0 @@
-node_modules/
-*.md*
-LICENSE
-.prettierrc.json
-.git
-.gitignore

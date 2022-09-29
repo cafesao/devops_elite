@@ -1,0 +1,11 @@
+Resources:
+  S3BucketLambda:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: petshop-lambda-s3
+
+Outputs:
+  S3BucketLambdaName:
+    Value: !Ref S3BucketLambda
+    Export:
+      Name: petshop-lambda-s3-bucket-name

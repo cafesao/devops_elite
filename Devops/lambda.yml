@@ -1,0 +1,247 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Parameters:
+  AcmCertificate:
+    Type: String
+
+  DomainName:
+    Type: String
+
+  NameAPI:
+    Type: String
+    Default: petshop-api
+
+  Timestamp:
+    Type: String
+
+Resources:
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: petshop-Api
+      StageName: Development
+      OpenApiVersion: 3.0.3
+      Cors:
+        AllowOrigin: "'*'"
+        AllowMethods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+        AllowHeaders: "'X-Amz-Date,X-Api-Key,X-Amz-Security-Token,X-Requested-With,X-Auth-Token,Referer,User-Agent,Origin,Content-Type,Authorization,Accept,Access-Control-Allow-Methods,Access-Control-Allow-Origin,Access-Control-Allow-Headers'"
+      Domain:
+        DomainName: !Sub "${NameAPI}.${DomainName}"
+        CertificateArn: !Ref AcmCertificate
+        EndpointConfiguration: EDGE
+        Route53:
+          HostedZoneName: !Sub ${DomainName}.
+
+  LambdaCreate:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: petshop-create
+      Handler: index.handler
+      Runtime: nodejs16.x
+      Description: ""
+      Timeout: 10
+      MemorySize: 256
+      Role:
+        "Fn::ImportValue": petshop-ArnRole
+      CodeUri:
+        Bucket:
+          "Fn::ImportValue": petshop-lambda-s3-bucket-name
+        Key: Create/lambda.zip
+      Environment:
+        Variables:
+          DATABASE_URL: !Sub "{{resolve:ssm:/ECS-CLUSTER/${AWS::Region}/petshop/RDS_URL:1}}"
+          TIMESTAMP:
+            "Fn::ImportValue": Timestamp
+      Events:
+        CreateClients:
+          Type: Api
+          Properties:
+            Path: /clients
+            Method: post
+            RestApiId:
+              Ref: ApiGateway
+        CreateAnimals:
+          Type: Api
+          Properties:
+            Path: /animals
+            Method: post
+            RestApiId:
+              Ref: ApiGateway
+
+  LambdaRead:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: petshop-read
+      Handler: index.handler
+      Runtime: nodejs16.x
+      Description: ""
+      Timeout: 10
+      MemorySize: 256
+      Role:
+        "Fn::ImportValue": petshop-ArnRole
+      CodeUri:
+        Bucket:
+          "Fn::ImportValue": petshop-lambda-s3-bucket-name
+        Key: Read/lambda.zip
+      Environment:
+        Variables:
+          DATABASE_URL: !Sub "{{resolve:ssm:/ECS-CLUSTER/${AWS::Region}/petshop/RDS_URL:1}}"
+          TIMESTAMP:
+            "Fn::ImportValue": Timestamp
+      Events:
+        ReadClients:
+          Type: Api
+          Properties:
+            Path: /clients
+            Method: get
+            RestApiId:
+              Ref: ApiGateway
+        ReadAnimals:
+          Type: Api
+          Properties:
+            Path: /animals
+            Method: get
+            RestApiId:
+              Ref: ApiGateway
+
+  LambdaUpdate:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: petshop-update
+      Handler: index.handler
+      Runtime: nodejs16.x
+      Description: ""
+      Timeout: 10
+      MemorySize: 256
+      Role:
+        "Fn::ImportValue": petshop-ArnRole
+      CodeUri:
+        Bucket:
+          "Fn::ImportValue": petshop-lambda-s3-bucket-name
+        Key: Update/lambda.zip
+      Environment:
+        Variables:
+          DATABASE_URL: !Sub "{{resolve:ssm:/ECS-CLUSTER/${AWS::Region}/petshop/RDS_URL:1}}"
+          TIMESTAMP:
+            "Fn::ImportValue": Timestamp
+      Events:
+        UpdateClients:
+          Type: Api
+          Properties:
+            Path: /clients
+            Method: patch
+            RestApiId:
+              Ref: ApiGateway
+        UpdateAnimals:
+          Type: Api
+          Properties:
+            Path: /animals
+            Method: patch
+            RestApiId:
+              Ref: ApiGateway
+
+  LambdaDelete:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: petshop-delete
+      Handler: index.handler
+      Runtime: nodejs16.x
+      Description: ""
+      Timeout: 10
+      MemorySize: 256
+      Role:
+        "Fn::ImportValue": petshop-ArnRole
+      CodeUri:
+        Bucket:
+          "Fn::ImportValue": petshop-lambda-s3-bucket-name
+        Key: Delete/lambda.zip
+      Environment:
+        Variables:
+          DATABASE_URL: !Sub "{{resolve:ssm:/ECS-CLUSTER/${AWS::Region}/petshop/RDS_URL:1}}"
+          TIMESTAMP:
+            "Fn::ImportValue": Timestamp
+      Events:
+        DeleteClients:
+          Type: Api
+          Properties:
+            Path: /clients
+            Method: delete
+            RestApiId:
+              Ref: ApiGateway
+        DeleteAnimals:
+          Type: Api
+          Properties:
+            Path: /animals
+            Method: delete
+            RestApiId:
+              Ref: ApiGateway
+
+  LogGroupCreate:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${LambdaCreate}"
+      RetentionInDays: 3
+
+  LogGroupRead:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${LambdaRead}"
+      RetentionInDays: 3
+
+  LogGroupUpdate:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${LambdaUpdate}"
+      RetentionInDays: 3
+
+  LogGroupDelete:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${LambdaDelete}"
+      RetentionInDays: 3
+
+Outputs:
+  LambdaNameCreate:
+    Value: !Ref LambdaCreate
+    Export:
+      Name: create-petshop-LambdaName
+
+  LambdaNameRead:
+    Value: !Ref LambdaRead
+    Export:
+      Name: read-petshop-LambdaName
+
+  LambdaNameUpdate:
+    Value: !Ref LambdaUpdate
+    Export:
+      Name: update-petshop-LambdaName
+
+  LambdaNameDelete:
+    Value: !Ref LambdaDelete
+    Export:
+      Name: delete-petshop-LambdaName
+
+  LambdaArnCreate:
+    Value: !GetAtt LambdaCreate.Arn
+    Export:
+      Name: create-petshop-LambdaArn
+
+  LambdaArnRead:
+    Value: !GetAtt LambdaRead.Arn
+    Export:
+      Name: read-petshop-LambdaArn
+
+  LambdaArnUpdate:
+    Value: !GetAtt LambdaUpdate.Arn
+    Export:
+      Name: update-petshop-LambdaArn
+
+  LambdaArnDelete:
+    Value: !GetAtt LambdaDelete.Arn
+    Export:
+      Name: delete-petshop-LambdaArn
+
+  ApiGatewayURL:
+    Value: !Sub ${NameAPI}.${DomainName}
+    Export:
+      Name: petshop-ApiGatewayURL

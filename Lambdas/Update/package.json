@@ -1,0 +1,17 @@
+{
+    "version": "1.0.0",
+    "main": "index.js",
+    "license": "MIT",
+    "scripts": {
+        "compile": "yarn tsc --build --force"
+    },
+    "devDependencies": {
+        "@types/aws-lambda": "^8.10.106",
+        "@types/node": "^18.7.23",
+        "aws-sdk": "^2.1226.0",
+        "typescript": "^4.8.4"
+    },
+    "dependencies": {
+        "senselogs": "^1.0.3"
+    }
+}
